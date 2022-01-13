@@ -1,4 +1,4 @@
-package scanner
+package main
 
 type TokenType int
 

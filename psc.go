@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/idea456/psu-lang/scanner"
 )
 
 func getInput(reader *bufio.Reader) string {
@@ -22,9 +20,12 @@ func main() {
 	fmt.Print(">>> ")
 	line := getInput(reader)
 	for ; !strings.EqualFold("exit", line); line = getInput(reader) {
-		s := scanner.NewScanner(line)
+		s := NewScanner(line)
 		arr := s.Scan()
 		fmt.Println(arr)
+		parser := NewParser(arr)
+		expr := parser.Parse()
+		fmt.Printf("%#v\n", expr)
 		fmt.Print(">>> ")
 	}
 	fmt.Print("Bai bai!\n")

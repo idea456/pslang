@@ -1,18 +1,19 @@
-package scanner
+package main
 
 import "strconv"
 
 type Scanner struct {
 	source  string
 	tokens  []Token
-	start   int
 	current int
 	line    int
 }
 
+/*
+Scanner constructor
+*/
 func NewScanner(text string) *Scanner {
 	scanner := Scanner{}
-	scanner.start = 0
 	scanner.current = 0
 	scanner.line = 1
 	scanner.source = string(text)
@@ -24,6 +25,10 @@ func (s *Scanner) Scan() []Token {
 	for !s.end() {
 		s.scanToken()
 	}
+	// append end
+	s.tokens = append(s.tokens, Token{
+		tokenType: EOF,
+	})
 	return s.tokens
 }
 
@@ -87,7 +92,7 @@ func (s *Scanner) scanToken() {
 	// scan for operators, brackets and semicolon
 	if s.match("+", "-", "*", "/", "%", "(", ")", "{", "}", ";", ",", ".") {
 		s.tokens = append(s.tokens, Token{
-			tokenType: keywords[s.peek()],
+			tokenType: keywords[s.previous()],
 			lexeme:    c,
 			line:      s.line,
 		})
@@ -114,6 +119,9 @@ func (s *Scanner) scanToken() {
 	if s.isAlpha(c) {
 		s.scanIdentifier()
 	}
+
+	// error: unexpected character
+	// raise Error
 }
 
 func (s *Scanner) scanNumber() {
@@ -143,7 +151,7 @@ func (s *Scanner) scanString() {
 	}
 
 	if s.end() && s.peek() != "'" {
-		// error
+		// error: unterminated string
 		return
 	}
 
@@ -199,6 +207,13 @@ func (s *Scanner) peek() string {
 		return string(s.source[len(s.source)-1])
 	}
 	return string(s.source[s.current])
+}
+
+func (s *Scanner) previous() string {
+	if s.current <= 0 {
+		return string(s.source[0])
+	}
+	return string(s.source[s.current-1])
 }
 
 func (s *Scanner) isAlpha(c string) bool {
