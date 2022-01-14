@@ -35,10 +35,10 @@ func (p *Parser) expression() Expression {
 func (p *Parser) equality() Expression {
 	var expr Expression = p.comparison()
 
-	if p.match(EQUAL_EQUAL, NOT_EQUAL) {
+	for p.match(EQUAL_EQUAL, NOT_EQUAL) {
 		var operator Token = p.previous()
 		var right Expression = p.comparison()
-		return &Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: operator,
 			right:    right,
@@ -53,10 +53,10 @@ comparison -> term ((">" | ">=" | "<" | "<=") term)*;
 func (p *Parser) comparison() Expression {
 	var expr Expression = p.term()
 
-	if p.match(LESS, LESS_EQUAL, GREATER, GREATER_EQUAL) {
+	for p.match(LESS, LESS_EQUAL, GREATER, GREATER_EQUAL) {
 		var operator Token = p.previous()
 		var right Expression = p.term()
-		return &Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: operator,
 			right:    right,
@@ -71,10 +71,10 @@ term -> factor (("+" | "-") factor)*;
 func (p *Parser) term() Expression {
 	var expr Expression = p.factor()
 
-	if p.match(PLUS, MINUS) {
+	for p.match(PLUS, MINUS) {
 		var operator Token = p.previous()
 		var right Expression = p.factor()
-		return &Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: operator,
 			right:    right,
@@ -86,10 +86,10 @@ func (p *Parser) term() Expression {
 func (p *Parser) factor() Expression {
 	var expr Expression = p.unary()
 
-	if p.match(STAR, SLASH, MODULUS) {
+	for p.match(STAR, SLASH, MODULUS) {
 		var operator Token = p.previous()
 		var right Expression = p.unary()
-		return &Binary{
+		expr = &Binary{
 			left:     expr,
 			operator: operator,
 			right:    right,
@@ -102,7 +102,7 @@ func (p *Parser) factor() Expression {
 unary -> ("!" | "-") unary | primary;
 */
 func (p *Parser) unary() Expression {
-	if p.match(NOT, MINUS) {
+	for p.match(NOT, MINUS) {
 		var operator Token = p.previous()
 		var right Expression = p.unary()
 		return &Unary{
@@ -153,9 +153,7 @@ func (p *Parser) primary() Expression {
 		if p.peek().tokenType != RIGHT_PAREN {
 			// FIX: throw error here, not return literal
 			// ERROR: Expect closing brackets for grouping!
-			return &Literal{
-				value: false,
-			}
+			panic("NOOO there's no closing bracket!")
 		} else {
 			p.next()
 			return &Group{
@@ -163,12 +161,7 @@ func (p *Parser) primary() Expression {
 			}
 		}
 	}
-
-	return &Variable{
-		name: Token{
-			tokenType: EMPTY,
-		},
-	}
+	panic("[Line 1] Unidentified expression!")
 }
 
 func (p *Parser) match(tokenTypes ...TokenType) bool {
