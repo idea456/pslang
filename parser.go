@@ -2,6 +2,15 @@ package main
 
 /*
 Stratified grammar:
+
+file -> declaration* EOF;
+declaration -> var_declaration | statement;
+var_declaration -> "set" IDENTIFIER ("to" expression)? ";"
+statement -> say_stmt | expr_stmt | block;
+say_stmt -> "say" expression ";"
+expr_stmt -> expression ";"
+block -> "{" declaration* "}"
+
 expression -> equality;
 equality -> comparison (("==" | "!=") comparison)*;
 comparison -> term ((">" | ">=" | "<" | "<=") term)*;
@@ -23,9 +32,98 @@ func NewParser(tokens []Token) *Parser {
 	return &parser
 }
 
-func (p *Parser) Parse() Expression {
+func (p *Parser) Parse() []Statement {
+	var statements []Statement = make([]Statement, 0)
+	// var expr Expression = p.expression()
+
+	for p.peek().tokenType != EOF {
+		statements = append(statements, p.declaration())
+	}
+
+	return statements
+}
+
+/*
+declaration -> var_declaration | statement;
+*/
+func (p *Parser) declaration() Statement {
+	// every statement must have terminating semicolon
+	defer func() {
+		if !p.match(SEMICOLON) {
+			panic("Error, expected semicolon after statement!")
+		}
+	}()
+
+	if p.match(SET) {
+		return p.var_declaration()
+	}
+
+	return p.statement()
+}
+
+/*
+var_declaration -> "set" IDENTIFIER ("to" expression)? ";"
+*/
+func (p *Parser) var_declaration() Statement {
+	var identifier Token = p.next()
+
+	var expr Expression = nil
+	for p.match(TO) {
+		expr = p.expression()
+	}
+
+	return &VariableStmt{name: identifier, initializer: expr}
+}
+
+/*
+statement -> say_stmt | expr_stmt | block;
+*/
+func (p *Parser) statement() Statement {
+	if p.match(SAY) {
+		return p.say_stmt()
+	} else if p.match(LEFT_BRACE) {
+		return p.block()
+	} else {
+		return p.expr_stmt()
+	}
+}
+
+/*
+say_stmt -> "say" expression ";"
+*/
+func (p *Parser) say_stmt() Statement {
 	var expr Expression = p.expression()
-	return expr
+
+	return &SayStmt{
+		expression: expr,
+	}
+}
+
+/*
+expr_stmt -> expression ";"
+*/
+func (p *Parser) expr_stmt() Statement {
+	return &ExprStmt{
+		expression: p.expression(),
+	}
+}
+
+/*
+block -> "{" declaration* "}"
+*/
+func (p *Parser) block() Statement {
+	var statements []Statement = make([]Statement, 0)
+
+	for !(p.match(RIGHT_BRACE)) && p.peek().tokenType != EOF {
+		statements = append(statements, p.declaration())
+	}
+
+	if p.peek().tokenType == EOF && p.previous().tokenType != RIGHT_BRACE {
+		panic("Error, expect closing braces in block statement!")
+	}
+	return &BlockStmt{
+		statements: statements,
+	}
 }
 
 func (p *Parser) expression() Expression {

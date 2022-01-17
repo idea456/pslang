@@ -1,10 +1,38 @@
 package main
 
+import "fmt"
+
 type Interpreter struct {
+	environment *Environment
 }
+
+func NewInterpreter() *Interpreter {
+	var itpr Interpreter = Interpreter{}
+	itpr.environment = NewEnvironment()
+	return &itpr
+}
+
+func (itpr *Interpreter) Interpret(stmts []Statement) {
+	for _, stmt := range stmts {
+		itpr.execute(stmt)
+	}
+}
+
+// func (itpr *Interpreter) accept(visitor VisitorStmt) {
+// 	return
+// }
+
+// func (itpr *Interpreter) accept(visitor VisitorExpr) interface{} {
+// 	return 0
+// }
 
 func (itpr *Interpreter) evaluate(expr Expression) interface{} {
 	return expr.accept(itpr)
+}
+
+// execution for statements
+func (itpr *Interpreter) execute(stmt Statement) {
+	stmt.accept(itpr)
 }
 
 func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
@@ -13,6 +41,9 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 
 	switch expr.operator.tokenType {
 	case PLUS:
+		if itpr.isString(left) && itpr.isString(right) {
+			return itpr.toString(left) + itpr.toString(right)
+		}
 		return itpr.toNum(left) + itpr.toNum(right)
 	case MINUS:
 		return itpr.toNum(left) - itpr.toNum(right)
@@ -85,7 +116,25 @@ func (itpr *Interpreter) visitGroupExpr(expr *Group) interface{} {
 }
 
 func (itpr *Interpreter) visitVariableExpr(expr *Variable) interface{} {
-	return 0
+	return (*itpr.environment).Get(expr.name)
+}
+
+func (itpr *Interpreter) visitVariableStmt(stmt *VariableStmt) {
+	var value interface{} = itpr.evaluate(stmt.initializer)
+	(*itpr.environment).Set(stmt.name, value)
+}
+
+func (itpr *Interpreter) visitSayStmt(stmt *SayStmt) {
+	var value interface{} = itpr.evaluate(stmt.expression)
+	fmt.Println(value)
+}
+
+func (itpr *Interpreter) visitBlockStmt(stmt *BlockStmt) {
+	fmt.Println("block")
+}
+
+func (itpr *Interpreter) visitExprStmt(stmt *ExprStmt) {
+	itpr.evaluate(stmt.expression)
 }
 
 func (itpr *Interpreter) evaluateBool(expr interface{}) bool {

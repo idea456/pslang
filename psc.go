@@ -14,6 +14,7 @@ func getInput(reader *bufio.Reader) string {
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
+	itpr := NewInterpreter()
 	fmt.Print("PSU Language | psuc 1.0.0\n")
 	fmt.Print("Type exit to exit the program or press Ctrl-D.\n")
 
@@ -22,14 +23,11 @@ func main() {
 	for ; !strings.EqualFold("exit", line); line = getInput(reader) {
 		s := NewScanner(line)
 		arr := s.Scan()
-		fmt.Println(arr)
 		parser := NewParser(arr)
-		expr := parser.Parse()
+		stmts := parser.Parse()
 
-		fmt.Printf("Type: %#v\n", expr)
-		itpr := Interpreter{}
-		var value interface{} = itpr.evaluate(expr)
-		fmt.Println(value)
+		// fmt.Printf("Type: %#v\n", stmts[0])
+		itpr.Interpret(stmts)
 		fmt.Print(">>> ")
 	}
 	fmt.Print("Bai bai!\n")

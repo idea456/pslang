@@ -1,6 +1,6 @@
 package main
 
-type Visitor interface {
+type VisitorExpr interface {
 	visitLiteralExpr(*Literal) interface{}
 	visitUnaryExpr(*Unary) interface{}
 	visitBinaryExpr(*Binary) interface{}
@@ -9,14 +9,14 @@ type Visitor interface {
 }
 
 type Expression interface {
-	accept(Visitor) interface{}
+	accept(VisitorExpr) interface{}
 }
 
 type Literal struct {
 	value interface{}
 }
 
-func (expr *Literal) accept(visitor Visitor) interface{} {
+func (expr *Literal) accept(visitor VisitorExpr) interface{} {
 	return visitor.visitLiteralExpr(expr)
 }
 
@@ -25,7 +25,7 @@ type Unary struct {
 	right    Expression
 }
 
-func (expr *Unary) accept(visitor Visitor) interface{} {
+func (expr *Unary) accept(visitor VisitorExpr) interface{} {
 	return visitor.visitUnaryExpr(expr)
 }
 
@@ -35,7 +35,7 @@ type Binary struct {
 	right    Expression
 }
 
-func (expr *Binary) accept(visitor Visitor) interface{} {
+func (expr *Binary) accept(visitor VisitorExpr) interface{} {
 	return visitor.visitBinaryExpr(expr)
 }
 
@@ -43,7 +43,7 @@ type Variable struct {
 	name Token
 }
 
-func (expr *Variable) accept(visitor Visitor) interface{} {
+func (expr *Variable) accept(visitor VisitorExpr) interface{} {
 	return visitor.visitVariableExpr(expr)
 }
 
@@ -51,6 +51,6 @@ type Group struct {
 	expression Expression
 }
 
-func (expr *Group) accept(visitor Visitor) interface{} {
+func (expr *Group) accept(visitor VisitorExpr) interface{} {
 	return visitor.visitGroupExpr(expr)
 }

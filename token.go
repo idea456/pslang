@@ -25,7 +25,7 @@ const (
 	WHILE
 	ASSUME
 	SET
-	AS
+	TO
 
 	NOT           // !
 	NOT_EQUAL     // !=
@@ -78,7 +78,7 @@ var keywords = map[string]TokenType{
 	"while":     WHILE,
 	"assume":    ASSUME,
 	"set":       SET,
-	"as":        AS,
+	"to":        TO,
 	"!":         NOT,
 	"!=":        NOT_EQUAL,
 	"==":        EQUAL_EQUAL,
