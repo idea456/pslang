@@ -98,4 +98,5 @@ var keywords = map[string]TokenType{
 	"/":         SLASH,
 	"*":         STAR,
 	"%":         MODULUS,
+	"empty":     EMPTY,
 }

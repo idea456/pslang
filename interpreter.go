@@ -23,8 +23,46 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 			panic("NOOO cannot divide by 0!")
 		}
 		return itpr.toNum(left) / itpr.toNum(right)
+	case EQUAL_EQUAL:
+		if left == nil || right == nil {
+			return false
+		}
+		return left == right
+	case GREATER:
+		// comparisons are only supported between strings and integers
+		if itpr.isString(left) && itpr.isString(right) {
+			return itpr.toString(left) > itpr.toString(right)
+		}
+		if itpr.isNum(left) && itpr.isNum(right) {
+			return itpr.toNum(left) > itpr.toNum(right)
+		}
+		panic("Error, expected string or integer for comparisons!")
+	case GREATER_EQUAL:
+		if itpr.isString(left) && itpr.isString(right) {
+			return itpr.toString(left) >= itpr.toString(right)
+		}
+		if itpr.isNum(left) && itpr.isNum(right) {
+			return itpr.toNum(left) >= itpr.toNum(right)
+		}
+		panic("Error, expected string or integer for comparisons!")
+	case LESS:
+		if itpr.isString(left) && itpr.isString(right) {
+			return itpr.toString(left) < itpr.toString(right)
+		}
+		if itpr.isNum(left) && itpr.isNum(right) {
+			return itpr.toNum(left) < itpr.toNum(right)
+		}
+		panic("Error, expected string or integer for comparisons!")
+	case LESS_EQUAL:
+		if itpr.isString(left) && itpr.isString(right) {
+			return itpr.toString(left) <= itpr.toString(right)
+		}
+		if itpr.isNum(left) && itpr.isNum(right) {
+			return itpr.toNum(left) <= itpr.toNum(right)
+		}
+		panic("Error, expected string or integer for comparisons!")
 	}
-	return left
+	return nil
 }
 
 func (itpr *Interpreter) visitLiteralExpr(expr *Literal) interface{} {
@@ -63,12 +101,49 @@ func (itpr *Interpreter) evaluateBool(expr interface{}) bool {
 	return true
 }
 
-func (itpr *Interpreter) toNum(expr interface{}) int {
-	// use type assertion
-	num, ok := expr.(int)
+// type SignedNum interface {
+// 	~int | ~int8 | ~int16 | ~int32 | ~int64
+// }
+
+func (itpr *Interpreter) toString(expr interface{}) string {
+	text, ok := expr.(string)
 	if !ok {
-		// ERROR: should be num
+		panic("Error, string expected!")
+	}
+	return text
+}
+
+func (itpr *Interpreter) isString(expr interface{}) bool {
+	_, ok := expr.(string)
+	return ok
+}
+
+func (itpr *Interpreter) isNum(expr interface{}) bool {
+	switch expr.(type) {
+	case int, int8, int16, int32, int64, float32, float64:
+		return true
+	default:
+		return false
+	}
+}
+
+func (itpr *Interpreter) toNum(expr interface{}) float64 {
+	switch t := expr.(type) {
+	case int:
+		return float64(t)
+	case int8:
+		return float64(t)
+	case int16:
+		return float64(t)
+	case int32:
+		return float64(t)
+	case int64:
+		return float64(t)
+	case float32:
+		return float64(t)
+	case float64:
+		return float64(t)
+	default:
 		panic("Error, integer expected!")
 	}
-	return num
 }

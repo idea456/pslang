@@ -26,12 +26,7 @@ func main() {
 		parser := NewParser(arr)
 		expr := parser.Parse()
 
-		// exprJSON, err := json.MarshalIndent(expr, "", "  ")
-		// if err != nil {
-		// 	log.Fatalf(err.Error())
-		// }
-		fmt.Println(expr)
-		fmt.Printf("Emp: %#v\n", expr)
+		fmt.Printf("Type: %#v\n", expr)
 		itpr := Interpreter{}
 		var value interface{} = itpr.evaluate(expr)
 		fmt.Println(value)
