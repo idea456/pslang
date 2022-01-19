@@ -5,13 +5,14 @@ Stratified grammar:
 
 file -> declaration* EOF;
 declaration -> var_declaration | statement;
-var_declaration -> "set" IDENTIFIER ("to" expression)? ";"
-statement -> say_stmt | expr_stmt | block;
+var_declaration -> "set" IDENTIFIER ("to" (expression | incr_decr))? ";"
+statement -> say_stmt | expr_stmt | incr_decr_stmt | block;
 say_stmt -> "say" expression ";"
 expr_stmt -> expression ";"
+incr_decr_stmt -> ("increment" | "decrement") IDENTIFIER "by" expression;
 block -> "{" declaration* "}"
 
-expression -> equality;
+expression -> equality | incr_decr;
 equality -> comparison (("==" | "!=") comparison)*;
 comparison -> term ((">" | ">=" | "<" | "<=") term)*;
 term -> factor (("+" | "-") factor)*;
@@ -62,7 +63,7 @@ func (p *Parser) declaration() Statement {
 }
 
 /*
-var_declaration -> "set" IDENTIFIER ("to" expression)? ";"
+var_declaration -> "set" IDENTIFIER ("to" (expression | incr_decr))? ";"
 */
 func (p *Parser) var_declaration() Statement {
 	var identifier Token = p.next()
@@ -76,13 +77,15 @@ func (p *Parser) var_declaration() Statement {
 }
 
 /*
-statement -> say_stmt | expr_stmt | block;
+statement -> say_stmt | expr_stmt | incr_decr_stmt | block;
 */
 func (p *Parser) statement() Statement {
 	if p.match(SAY) {
 		return p.say_stmt()
 	} else if p.match(LEFT_BRACE) {
 		return p.block()
+	} else if p.match(INCREMENT, DECREMENT) {
+		return p.incr_decr_stmt()
 	} else {
 		return p.expr_stmt()
 	}
@@ -109,6 +112,24 @@ func (p *Parser) expr_stmt() Statement {
 }
 
 /*
+incr_decr_stmt -> ("increment" | "decrement") INDENTIFIER "by" expression;
+*/
+func (p *Parser) incr_decr_stmt() Statement {
+	var operator Token = p.previous()
+	var identifier Token = p.consume()
+
+	if p.match(BY) {
+		return &IncrDecrStmt{
+			identifier: identifier,
+			operator:   operator,
+			right:      p.expression(),
+		}
+	} else {
+		panic("Increment/decrement statements must be followed with 'by'.")
+	}
+}
+
+/*
 block -> "{" declaration* "}"
 */
 func (p *Parser) block() Statement {
@@ -127,6 +148,13 @@ func (p *Parser) block() Statement {
 }
 
 func (p *Parser) expression() Expression {
+	if p.match(INCREMENT, DECREMENT) {
+		if p.match(BY) {
+
+		} else {
+			panic("Increment/decrement must follow 'by' keyword!")
+		}
+	}
 	return p.equality()
 }
 
@@ -212,7 +240,7 @@ func (p *Parser) unary() Expression {
 }
 
 /*
-primary -> NUMBER | STRING | IDENTIFIER | "true" | "false" | "empty" | "(" expression ")";
+primary -> NUMBER | STRING | IDENTIFIER | "true" | "false" | "empty" | "(" expression ")" | incr_decr;
 */
 func (p *Parser) primary() Expression {
 	if p.match(NUMBER, STRING) {
@@ -282,6 +310,12 @@ func (p *Parser) next() Token {
 
 func (p *Parser) peek() Token {
 	return p.tokens[p.current]
+}
+
+func (p *Parser) consume() Token {
+	var ret Token = p.peek()
+	p.next()
+	return ret
 }
 
 func (p *Parser) previous() Token {

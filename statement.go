@@ -5,6 +5,7 @@ type VisitorStmt interface {
 	visitSayStmt(stmt *SayStmt)
 	visitBlockStmt(stmt *BlockStmt)
 	visitExprStmt(stmt *ExprStmt)
+	visitIncrDecrStmt(stmt *IncrDecrStmt)
 }
 
 type Statement interface {
@@ -42,4 +43,14 @@ type ExprStmt struct {
 
 func (stmt *ExprStmt) accept(visitor VisitorStmt) {
 	visitor.visitExprStmt(stmt)
+}
+
+type IncrDecrStmt struct {
+	identifier Token
+	operator   Token
+	right      Expression
+}
+
+func (stmt *IncrDecrStmt) accept(visitor VisitorStmt) {
+	visitor.visitIncrDecrStmt(stmt)
 }

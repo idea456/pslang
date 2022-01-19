@@ -59,6 +59,11 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 			return false
 		}
 		return left == right
+	case NOT_EQUAL:
+		if left == nil || right == nil {
+			return false
+		}
+		return left != right
 	case GREATER:
 		// comparisons are only supported between strings and integers
 		if itpr.isString(left) && itpr.isString(right) {
@@ -135,6 +140,21 @@ func (itpr *Interpreter) visitBlockStmt(stmt *BlockStmt) {
 
 func (itpr *Interpreter) visitExprStmt(stmt *ExprStmt) {
 	itpr.evaluate(stmt.expression)
+}
+
+func (itpr *Interpreter) visitIncrDecrStmt(stmt *IncrDecrStmt) {
+	var left interface{} = (*itpr.environment).Get(stmt.identifier)
+	var right interface{} = itpr.evaluate(stmt.right)
+
+	if !(itpr.isNum(left) && itpr.isNum(right)) {
+		panic("Error, only numbers allowed for increments/decrements!")
+	}
+
+	if stmt.operator.tokenType == INCREMENT {
+		(*itpr.environment).Set(stmt.identifier, itpr.toNum(left)+itpr.toNum(right))
+	} else if stmt.operator.tokenType == DECREMENT {
+		(*itpr.environment).Set(stmt.identifier, itpr.toNum(left)-itpr.toNum(right))
+	}
 }
 
 func (itpr *Interpreter) evaluateBool(expr interface{}) bool {

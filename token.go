@@ -47,6 +47,9 @@ const (
 	SLASH
 	STAR
 	MODULUS
+	INCREMENT
+	DECREMENT
+	BY
 
 	EMPTY
 	UNKNOWN
@@ -79,6 +82,9 @@ var keywords = map[string]TokenType{
 	"assume":    ASSUME,
 	"set":       SET,
 	"to":        TO,
+	"increment": INCREMENT,
+	"decrement": DECREMENT,
+	"by":        BY,
 	"!":         NOT,
 	"!=":        NOT_EQUAL,
 	"==":        EQUAL_EQUAL,
