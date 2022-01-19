@@ -9,5 +9,5 @@ type RuntimeError struct {
 }
 
 func (e *RuntimeError) Error() {
-	fmt.Sprintf("[Line %d] Runtime error at '%s' : %s", e.line, e.token.lexeme, e.message)
+	fmt.Printf("[Line %d] Runtime error at '%s' : %s", e.line, e.token.lexeme, e.message)
 }

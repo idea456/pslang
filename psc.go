@@ -23,6 +23,7 @@ func main() {
 	for ; !strings.EqualFold("exit", line); line = getInput(reader) {
 		s := NewScanner(line)
 		arr := s.Scan()
+		// fmt.Println(arr)
 		parser := NewParser(arr)
 		stmts := parser.Parse()
 

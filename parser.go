@@ -6,10 +6,11 @@ Stratified grammar:
 file -> declaration* EOF;
 declaration -> var_declaration | statement;
 var_declaration -> "set" IDENTIFIER ("to" (expression | incr_decr))? ";"
-statement -> say_stmt | expr_stmt | incr_decr_stmt | block;
+statement -> say_stmt | expr_stmt | incr_decr_stmt | if_stmt | block;
 say_stmt -> "say" expression ";"
 expr_stmt -> expression ";"
 incr_decr_stmt -> ("increment" | "decrement") IDENTIFIER "by" expression;
+if_stmt -> "if" "(" expression ")" "then" statement ("else" statement)?;
 block -> "{" declaration* "}"
 
 expression -> equality | incr_decr;
@@ -77,18 +78,23 @@ func (p *Parser) var_declaration() Statement {
 }
 
 /*
-statement -> say_stmt | expr_stmt | incr_decr_stmt | block;
+statement -> say_stmt | expr_stmt | incr_decr_stmt | if_stmt | block;
 */
 func (p *Parser) statement() Statement {
 	if p.match(SAY) {
 		return p.say_stmt()
-	} else if p.match(LEFT_BRACE) {
-		return p.block()
-	} else if p.match(INCREMENT, DECREMENT) {
-		return p.incr_decr_stmt()
-	} else {
-		return p.expr_stmt()
 	}
+	if p.match(LEFT_BRACE) {
+		return p.block()
+	}
+	if p.match(INCREMENT, DECREMENT) {
+		return p.incr_decr_stmt()
+	}
+	if p.match(IF) {
+		return p.if_stmt()
+	}
+	return p.expr_stmt()
+
 }
 
 /*
@@ -116,7 +122,9 @@ incr_decr_stmt -> ("increment" | "decrement") INDENTIFIER "by" expression;
 */
 func (p *Parser) incr_decr_stmt() Statement {
 	var operator Token = p.previous()
-	var identifier Token = p.consume()
+	var identifier Token = p.peek()
+
+	p.next()
 
 	if p.match(BY) {
 		return &IncrDecrStmt{
@@ -126,6 +134,25 @@ func (p *Parser) incr_decr_stmt() Statement {
 		}
 	} else {
 		panic("Increment/decrement statements must be followed with 'by'.")
+	}
+}
+
+func (p *Parser) if_stmt() Statement {
+	// p.consume(LEFT_PAREN, "Error, expected '(' in if statement")
+	var expr Expression = p.expression()
+	// p.consume(RIGHT_PAREN, "Error, expected ')' after if statement")
+	p.consume(THEN, "Error, if statements are followed by 'then'")
+
+	var thenBranch Statement = p.statement()
+	var elseBranch Statement
+	if p.match(ELSE) {
+		elseBranch = p.statement()
+	}
+
+	return &IfStmt{
+		expression: expr,
+		thenBranch: thenBranch,
+		elseBranch: elseBranch,
 	}
 }
 
@@ -312,10 +339,12 @@ func (p *Parser) peek() Token {
 	return p.tokens[p.current]
 }
 
-func (p *Parser) consume() Token {
-	var ret Token = p.peek()
-	p.next()
-	return ret
+func (p *Parser) consume(tokenType TokenType, message string) {
+	if p.peek().tokenType == tokenType {
+		p.next()
+		return
+	}
+	panic(message)
 }
 
 func (p *Parser) previous() Token {

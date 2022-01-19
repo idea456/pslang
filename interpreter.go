@@ -138,6 +138,14 @@ func (itpr *Interpreter) visitBlockStmt(stmt *BlockStmt) {
 	fmt.Println("block")
 }
 
+func (itpr *Interpreter) visitIfStmt(stmt *IfStmt) {
+	if itpr.evaluateBool(itpr.evaluate(stmt.expression)) {
+		itpr.execute(stmt.thenBranch)
+	} else {
+		itpr.execute(stmt.elseBranch)
+	}
+}
+
 func (itpr *Interpreter) visitExprStmt(stmt *ExprStmt) {
 	itpr.evaluate(stmt.expression)
 }

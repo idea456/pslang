@@ -1,0 +1,6 @@
+set n to 4;
+if n == 0 then
+    increment n by 1;
+    say "Zero";
+else
+    say "Nanii";

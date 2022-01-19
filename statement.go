@@ -6,6 +6,7 @@ type VisitorStmt interface {
 	visitBlockStmt(stmt *BlockStmt)
 	visitExprStmt(stmt *ExprStmt)
 	visitIncrDecrStmt(stmt *IncrDecrStmt)
+	visitIfStmt(stmt *IfStmt)
 }
 
 type Statement interface {
@@ -53,4 +54,14 @@ type IncrDecrStmt struct {
 
 func (stmt *IncrDecrStmt) accept(visitor VisitorStmt) {
 	visitor.visitIncrDecrStmt(stmt)
+}
+
+type IfStmt struct {
+	expression Expression
+	thenBranch Statement
+	elseBranch Statement
+}
+
+func (stmt *IfStmt) accept(visitor VisitorStmt) {
+	visitor.visitIfStmt(stmt)
 }
