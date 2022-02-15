@@ -2,12 +2,8 @@ package main
 
 import "fmt"
 
-type RuntimeError struct {
-	line    int
-	token   Token
-	message string
-}
-
-func (e *RuntimeError) Error() {
-	fmt.Printf("[Line %d] Runtime error at '%s' : %s", e.line, e.token.lexeme, e.message)
+func RuntimeError(line int, lexeme interface{}, message string) {
+	lexemeStr := fmt.Sprint(lexeme)
+	var msg string = fmt.Sprintf("[Line %d] Runtime Error at '%s': %s", line, lexemeStr, message)
+	panic(msg)
 }

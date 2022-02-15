@@ -4,3 +4,30 @@ if n == 0 then
     say "Zero";
 else
     say "Nanii";
+
+
+while n < 10 do
+    say "n is not 10!"
+    increment n by 1
+
+
+algorithm checkNumber(n, m)
+    set output to false
+
+    assume PI to 1.34
+    set checked to false
+    while n % 2 != 0 do
+        if n < 10 then
+            increment n by PI
+            set checked to true
+
+    
+    return n
+
+set a to 1;
+set b to 10;
+while b - a > 5 do {
+    say b - a;
+    increment a by 1;
+    decrement b by 1;
+}
