@@ -103,6 +103,11 @@ func (s *Scanner) scanToken() {
 	// ignore whitespaces, tabs and newlines
 	if s.match("\n", "\r", " ", "\t") {
 		if s.previous() == "\n" {
+			s.tokens = append(s.tokens, Token{
+				tokenType: NEWLINE,
+				literal: "\n",
+				line: s.line,
+			})
 			s.line += 1
 		}
 		return
@@ -152,8 +157,9 @@ func (s *Scanner) scanString() {
 		value += s.next()
 	}
 
-	if s.end() && s.peek() != "'" {
+	if s.end() && s.peek() != "\"" {
 		// error: unterminated string
+		RuntimeError(s.line, s.peek(), "Expected closing quotation marks in string.")
 		return
 	}
 

@@ -42,14 +42,20 @@ func NewParser(tokens []Token) *Parser {
 func (p *Parser) Parse() []Statement {
 	defer func() {
 		// exit panic mode and synchronize to the nearest starting statement keyword
-		if r := recover(); r != nil && !p.end() {
+		if r := recover(); r != nil {
 			fmt.Printf("%+v\n", r)
 			p.synchronize()
+			// if p.peek().tokenType == LEFT_BRACE {
+			// 	p.synchronizeToken(RIGHT_BRACE)
+			// 	fmt.Println(p.peek().lexeme)
+			// 	p.next()
+			// }
 			p.Parse()
 		}
 	}()
 	var statements []Statement = make([]Statement, 0)
 	// var expr Expression = p.expression()
+	
 
 	for p.peek().tokenType != EOF {
 		statements = append(statements, p.declaration())
@@ -63,15 +69,22 @@ declaration -> var_declaration | statement;
 */
 func (p *Parser) declaration() Statement {
 	// every statement must have terminating semicolon
+	// defer func() {
+	// 	if !p.end() && !p.match(SEMICOLON) {
+	// 		// if p.previous().tokenType == SEMICOLON && p.peek().tokenType == RIGHT_BRACE {
+	// 		// 	return
+	// 		// }
+	// 		if p.previous().tokenType == SEMICOLON && p.match(RIGHT_BRACE) {
+	// 			return
+	// 		}
+	// 		RuntimeError(p.previous().line, p.previous().lexeme, "expected semicolon after statement!")
+	// 	}
+	// }()
+
 	defer func() {
-		if !p.end() && !p.match(SEMICOLON) {
-			// if p.previous().tokenType == SEMICOLON && p.peek().tokenType == RIGHT_BRACE {
-			// 	return
-			// }
-			if p.previous().tokenType == SEMICOLON && p.match(RIGHT_BRACE) {
-				return
-			}
-			RuntimeError(p.previous().line, p.previous().lexeme, "expected semicolon after statement!")
+		// skip the NEWLINE token to go to next line (or else we end up in infinite loop if current token is NEWLINE)
+		if !p.end() && p.match(NEWLINE) {
+			return
 		}
 	}()
 
@@ -124,6 +137,10 @@ say_stmt -> "say" expression ";"
 */
 func (p *Parser) say_stmt() Statement {
 	var expr Expression = p.expression()
+	// expression returns EOF
+	if expr == nil {
+		RuntimeError(p.previous().line, p.previous().lexeme, "Expected expression after 'say' statement.")
+	}
 
 	return &SayStmt{
 		expression: expr,
@@ -135,7 +152,7 @@ expr_stmt -> expression ";"
 */
 func (p *Parser) expr_stmt() Statement {
 	return &ExprStmt{
-		expression: p.expression(),
+		expression: p.expression(), 
 	}
 }
 
@@ -164,8 +181,10 @@ func (p *Parser) if_stmt() Statement {
 	var expr Expression = p.expression()
 	// p.consume(RIGHT_PAREN, "Error, expected ')' after if statement")
 	p.consume(THEN, "Error, if statements are followed by 'then'")
+	p.consume(LEFT_BRACE, "Error, if statements are enclosed by braces'")
 
 	var thenBranch Statement = p.statement()
+	p.consume(RIGHT_BRACE, "Error, if statements are enclosed by braces")
 	var elseBranch Statement
 	if p.match(ELSE) {
 		elseBranch = p.statement()
@@ -407,7 +426,7 @@ func (p *Parser) primary() Expression {
 		}
 	}
 
-	if p.peek().tokenType == RIGHT_BRACE || p.peek().tokenType == SEMICOLON {
+	if p.peek().tokenType == RIGHT_BRACE || p.peek().tokenType == NEWLINE || p.peek().tokenType == EOF {
 		return nil
 	}
 	RuntimeError(p.peek().line, p.peek().lexeme, "unidentified expression.")
@@ -446,13 +465,21 @@ func (p *Parser) peekNext() Token {
 	return p.tokens[p.current+1]
 }
 
-func (p *Parser) consume(tokenType TokenType, message string) {
-	if p.peek().tokenType == tokenType {
+func (p *Parser) consume(tt TokenType, message string) {
+	if p.peek().tokenType == tt {
 		p.next()
 		return
 	}
 	panic(message)
 }
+
+func (p *Parser) synchronizeToken(endToken TokenType) {
+	for !p.end() && p.peek().tokenType != endToken {
+		p.next()
+	}
+	return
+}
+
 
 func (p *Parser) synchronize() {
 	// defer func() {
@@ -462,7 +489,7 @@ func (p *Parser) synchronize() {
 	// p.next()
 
 	for !p.end() {
-		if p.match(SEMICOLON) {
+		if p.match(NEWLINE) {
 			/*
 				case when synchronizing points to right brace where it checked semicolon exists in previous():
 				{
@@ -473,6 +500,7 @@ func (p *Parser) synchronize() {
 			// if p.peek().tokenType == RIGHT_BRACE {
 			// 	p.next()
 			// }
+			p.next()
 			return
 		}
 
@@ -481,7 +509,8 @@ func (p *Parser) synchronize() {
 		tokenType := p.peek().tokenType
 		if tokenType == CLASS || tokenType == PROCEDURE || tokenType == SET ||
 			tokenType == FOR || tokenType == IF || tokenType == SAY ||
-			tokenType == WHILE || tokenType == RETURN {
+			tokenType == WHILE || tokenType == RETURN || tokenType == EOF || tokenType == LEFT_BRACE {
+			fmt.Printf("Synchronized at %s\n", p.peek().lexeme)
 			return
 		}
 		p.next()

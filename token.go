@@ -54,6 +54,7 @@ const (
 
 	EMPTY
 	UNKNOWN
+	NEWLINE
 	EOF
 )
 
@@ -107,4 +108,5 @@ var keywords = map[string]TokenType{
 	"*":         STAR,
 	"%":         MODULUS,
 	"empty":     EMPTY,
+	"\n":        NEWLINE,
 }

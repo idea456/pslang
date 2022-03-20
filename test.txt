@@ -1,7 +1,1 @@
-set c to 100;
-say "Hewwo";
-while c > 0 do {
-    set num to 2;
-    set c to c - 5;
-    say c * num;
-};
+say "hewwo"
