@@ -8,11 +8,17 @@ type Interpreter struct {
 
 func NewInterpreter() *Interpreter {
 	var itpr Interpreter = Interpreter{}
-	itpr.environment = NewEnvironment()
+	itpr.environment = NewEnv()
 	return &itpr
 }
 
 func (itpr *Interpreter) Interpret(stmts []Statement) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%+v\n", r)
+		}
+	}()
+
 	for _, stmt := range stmts {
 		itpr.execute(stmt)
 	}
@@ -35,10 +41,25 @@ func (itpr *Interpreter) execute(stmt Statement) {
 	stmt.accept(itpr)
 }
 
+func (itpr *Interpreter) visitLogicalExpr(expr *Logical) interface{} {
+	var left interface{} = itpr.evaluate(expr.left)
+	if expr.operator.tokenType == OR {
+		if itpr.evaluateBool(left) {
+			return left
+		}
+	} else {
+		if !itpr.evaluateBool(left) {
+			return left
+		}
+	}
+	return itpr.evaluate(expr.right)
+}
+
 func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 	var left interface{} = itpr.evaluate(expr.left)
 	var right interface{} = itpr.evaluate(expr.right)
 
+	checkedComparison := false
 	switch expr.operator.tokenType {
 	case PLUS:
 		if itpr.isString(left) && itpr.isString(right) {
@@ -51,9 +72,16 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 		return itpr.toNum(left) * itpr.toNum(right)
 	case SLASH:
 		if itpr.toNum(right) == 0 {
-			panic("NOOO cannot divide by 0!")
+			RuntimeError(expr.operator.line, right, "cannot divide numbers by 0.")
 		}
 		return itpr.toNum(left) / itpr.toNum(right)
+	case MODULUS:
+		leftNum, okLeft := left.(int)
+		rightNum, okRight := right.(int)
+		if !okLeft || !okRight {
+			RuntimeError(expr.operator.line, right, "cannot modulus non-integers!")
+		}
+		return leftNum % rightNum
 	case EQUAL_EQUAL:
 		if left == nil || right == nil {
 			return false
@@ -72,7 +100,7 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 		if itpr.isNum(left) && itpr.isNum(right) {
 			return itpr.toNum(left) > itpr.toNum(right)
 		}
-		panic("Error, expected string or integer for comparisons!")
+		checkedComparison = true
 	case GREATER_EQUAL:
 		if itpr.isString(left) && itpr.isString(right) {
 			return itpr.toString(left) >= itpr.toString(right)
@@ -80,7 +108,7 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 		if itpr.isNum(left) && itpr.isNum(right) {
 			return itpr.toNum(left) >= itpr.toNum(right)
 		}
-		panic("Error, expected string or integer for comparisons!")
+		checkedComparison = true
 	case LESS:
 		if itpr.isString(left) && itpr.isString(right) {
 			return itpr.toString(left) < itpr.toString(right)
@@ -88,7 +116,7 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 		if itpr.isNum(left) && itpr.isNum(right) {
 			return itpr.toNum(left) < itpr.toNum(right)
 		}
-		panic("Error, expected string or integer for comparisons!")
+		checkedComparison = true
 	case LESS_EQUAL:
 		if itpr.isString(left) && itpr.isString(right) {
 			return itpr.toString(left) <= itpr.toString(right)
@@ -96,7 +124,10 @@ func (itpr *Interpreter) visitBinaryExpr(expr *Binary) interface{} {
 		if itpr.isNum(left) && itpr.isNum(right) {
 			return itpr.toNum(left) <= itpr.toNum(right)
 		}
-		panic("Error, expected string or integer for comparisons!")
+		checkedComparison = true
+	}
+	if checkedComparison {
+		RuntimeError(expr.operator.line, expr.operator.lexeme, "Error, expected string or integer for comparisons!")
 	}
 	return nil
 }
@@ -134,8 +165,17 @@ func (itpr *Interpreter) visitSayStmt(stmt *SayStmt) {
 	fmt.Println(value)
 }
 
-func (itpr *Interpreter) visitBlockStmt(stmt *BlockStmt) {
-	fmt.Println("block")
+func (itpr *Interpreter) visitBlockStmt(blockStmt *BlockStmt) {
+	var enclosing *Environment = itpr.environment
+	defer func() {
+		itpr.environment = enclosing
+	}()
+
+	itpr.environment = NewEnv()
+	itpr.environment.enclosing = enclosing
+	for _, stmt := range blockStmt.statements {
+		itpr.execute(stmt)
+	}
 }
 
 func (itpr *Interpreter) visitIfStmt(stmt *IfStmt) {
@@ -143,6 +183,16 @@ func (itpr *Interpreter) visitIfStmt(stmt *IfStmt) {
 		itpr.execute(stmt.thenBranch)
 	} else {
 		itpr.execute(stmt.elseBranch)
+	}
+}
+
+func (itpr *Interpreter) visitWhileStmt(stmt *WhileStmt) {
+	var condition interface{} = itpr.evaluate(stmt.condition)
+
+	for itpr.evaluateBool(condition) {
+		itpr.execute(stmt.body)
+		// re-evaluate the condition again after executing a statement in the body
+		condition = itpr.evaluate(stmt.condition)
 	}
 }
 
@@ -155,7 +205,7 @@ func (itpr *Interpreter) visitIncrDecrStmt(stmt *IncrDecrStmt) {
 	var right interface{} = itpr.evaluate(stmt.right)
 
 	if !(itpr.isNum(left) && itpr.isNum(right)) {
-		panic("Error, only numbers allowed for increments/decrements!")
+		RuntimeError(stmt.identifier.line, stmt.identifier.lexeme, "only numbers allowed for increments/decrements.")
 	}
 
 	if stmt.operator.tokenType == INCREMENT {
@@ -177,10 +227,6 @@ func (itpr *Interpreter) evaluateBool(expr interface{}) bool {
 	// assume all other values are true
 	return true
 }
-
-// type SignedNum interface {
-// 	~int | ~int8 | ~int16 | ~int32 | ~int64
-// }
 
 func (itpr *Interpreter) toString(expr interface{}) string {
 	text, ok := expr.(string)

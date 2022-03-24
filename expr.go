@@ -6,6 +6,7 @@ type VisitorExpr interface {
 	visitBinaryExpr(*Binary) interface{}
 	visitVariableExpr(*Variable) interface{}
 	visitGroupExpr(*Group) interface{}
+	visitLogicalExpr(*Logical) interface{}
 }
 
 type Expression interface {
@@ -53,4 +54,14 @@ type Group struct {
 
 func (expr *Group) accept(visitor VisitorExpr) interface{} {
 	return visitor.visitGroupExpr(expr)
+}
+
+type Logical struct {
+	left     Expression
+	operator Token
+	right    Expression
+}
+
+func (expr *Logical) accept(visitor VisitorExpr) interface{} {
+	return visitor.visitLogicalExpr(expr)
 }

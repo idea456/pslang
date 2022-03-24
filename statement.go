@@ -7,6 +7,7 @@ type VisitorStmt interface {
 	visitExprStmt(stmt *ExprStmt)
 	visitIncrDecrStmt(stmt *IncrDecrStmt)
 	visitIfStmt(stmt *IfStmt)
+	visitWhileStmt(stmt *WhileStmt)
 }
 
 type Statement interface {
@@ -64,4 +65,13 @@ type IfStmt struct {
 
 func (stmt *IfStmt) accept(visitor VisitorStmt) {
 	visitor.visitIfStmt(stmt)
+}
+
+type WhileStmt struct {
+	condition Expression
+	body      Statement
+}
+
+func (stmt *WhileStmt) accept(visitor VisitorStmt) {
+	visitor.visitWhileStmt(stmt)
 }

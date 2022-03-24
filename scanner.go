@@ -1,6 +1,8 @@
 package main
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type Scanner struct {
 	source  string
@@ -100,7 +102,7 @@ func (s *Scanner) scanToken() {
 
 	// ignore whitespaces, tabs and newlines
 	if s.match("\n", "\r", " ", "\t") {
-		if s.match("\n") {
+		if s.previous() == "\n" {
 			s.line += 1
 		}
 		return

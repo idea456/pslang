@@ -23,6 +23,7 @@ const (
 	THIS
 	TRUE
 	WHILE
+	DO
 	ASSUME
 	SET
 	TO
@@ -79,6 +80,7 @@ var keywords = map[string]TokenType{
 	"this":      THIS,
 	"true":      TRUE,
 	"while":     WHILE,
+	"do":        DO,
 	"assume":    ASSUME,
 	"set":       SET,
 	"to":        TO,
